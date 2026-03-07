@@ -31,35 +31,39 @@
                 if (!apiKey) return alert("APIキーを 入力してください");
                 setLoading(true);
                 
-                // 404を回避するため、最も安定している v1beta エンドポイントを使用
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                // 404を回避するため、最新かつ安定した v1 エンドポイントを使用
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
                 try {
                     const res = await fetch(url, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けのとっても優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。必ずこのJSON形式だけで返してください： {"pages": [{"text": "本文"}]}` }] }]
+                            contents: [{ 
+                                parts: [{ 
+                                    text: `${mainChar}が主人公の、2歳児向けの優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。必ずこのJSON形式だけで返してください： {"pages": [{"text": "本文"}]}` 
+                                }] 
+                            }],
+                            generationConfig: { 
+                                responseMimeType: "application/json"
+                            }
                         })
                     });
 
                     if (!res.ok) {
                         const errData = await res.json();
-                        // 404が出た場合はモデル名を変更して再試行するヒントを出す
                         throw new Error(errData.error?.message || "通信エラーが発生しました");
                     }
 
                     const data = await res.json();
-                    let textResponse = data.candidates[0].content.parts[0].text;
-                    const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) throw new Error("お話の形が 正しくありませんでした。もう一度試してください。");
+                    const textResponse = data.candidates[0].content.parts[0].text;
+                    const result = JSON.parse(textResponse);
                     
-                    const result = JSON.parse(jsonMatch[0]);
                     setStory(result.pages);
                     setStep("reader");
                     setPageIndex(0);
                 } catch (e) {
-                    alert("【エラー解決のヒント】\n" + e.message + "\n\n1. APIキーがGemini用か確認してください\n2. 前後に余計な文字が入っていないか確認してください");
+                    alert("【エラー解決のヒント】\n" + e.message + "\n\n1. APIキーがGemini用か確認してください\n2. 前後に余計な空白が入っていないか確認してください");
                 } finally {
                     setLoading(false);
                 }
@@ -73,7 +77,7 @@
                     </header>
 
                     {step === "setup" ? (
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-rose-50 animate-in fade-in duration-500">
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-rose-50">
                             <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">Gemini API Key</label>
                             <input 
                                 type="password" 
@@ -86,7 +90,7 @@
                             <input 
                                 value={mainChar} 
                                 onChange={(e) => setMainChar(e.target.value)}
-                                className="w-full p-4 bg-rose-50 rounded-2xl mb-10 font-bold border-2 border-transparent focus:border-rose-200 outline-none transition-all text-lg"
+                                className="w-full p-4 bg-rose-50 rounded-2xl mb-10 font-bold border-2 border-transparent focus:border-rose-200 outline-none transition-all text-lg text-slate-700"
                             />
                             <button 
                                 onClick={generateStory}
