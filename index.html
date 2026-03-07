@@ -5,17 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AIえほんメーカー</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-[#FFFBF5] text-[#4A3F35] font-sans">
+<body class="bg-[#FFFBF5] text-[#4A3F35]">
     <div id="root">
         <div class="flex items-center justify-center min-h-screen">
-            <div class="text-center">
-                <p className="text-xl font-bold">じゅんびちゅう...</p>
-                <p className="text-sm text-slate-400">10秒たっても変わらない場合は、再読み込みしてください。</p>
-            </div>
+            <p class="font-bold text-rose-300 animate-pulse">読み込み中...</p>
         </div>
     </div>
 
@@ -34,6 +31,7 @@
                 if (!apiKey) return alert("APIキーを入力してください");
                 setLoading(true);
                 
+                // 最も安定している v1 エンドポイント
                 const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
                 try {
@@ -41,49 +39,49 @@
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けの優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。必ずこのJSON形式だけで返して： {"pages": [{"text": "本文"}]}` }] }]
+                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けの優しい絵本を4ページ分作って。ひらがなだけで。JSON形式 {"pages": [{"text": "本文"}]} で出力して。余計な説明は不要。` }] }]
                         })
                     });
 
                     if (!res.ok) {
                         const errData = await res.json();
-                        throw new Error(errData.error?.message || "通信エラー");
+                        throw new Error(errData.error?.message || "API通信エラー");
                     }
 
                     const data = await res.json();
                     let textResponse = data.candidates[0].content.parts[0].text;
                     const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) throw new Error("お話がうまく作れませんでした。もう一度ボタンを押してみてね。");
+                    if (!jsonMatch) throw new Error("お話の生成に失敗しました。もう一度試してください。");
                     
                     const result = JSON.parse(jsonMatch[0]);
                     setStory(result.pages);
                     setStep("reader");
                     setPageIndex(0);
                 } catch (e) {
-                    alert("エラー: " + e.message);
+                    alert("エラー: " + e.message + "\n\n※キーが正しいか、スペースが入っていないか確認してください。");
                 } finally {
                     setLoading(false);
                 }
             };
 
             return (
-                <div className="max-w-md mx-auto min-h-screen p-6">
+                <div className="max-w-md mx-auto min-h-screen p-6 font-sans">
                     <header className="flex items-center gap-3 mb-8">
-                        <div className="bg-rose-500 p-2 rounded-lg text-white font-bold text-xl shadow-lg">📖</div>
+                        <div className="bg-rose-500 p-2 rounded-xl text-white text-xl shadow-lg">📖</div>
                         <h1 className="text-xl font-bold tracking-tight">AIえほんメーカー</h1>
                     </header>
 
                     {step === "setup" ? (
                         <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-rose-50">
-                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Google Gemini API Key</label>
+                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">Gemini API Key</label>
                             <input 
                                 type="password" 
                                 value={apiKey} 
                                 onChange={(e) => setApiKey(e.target.value.trim())}
                                 className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none transition-all"
-                                placeholder="キーを貼り付けてください"
+                                placeholder="キーを入力"
                             />
-                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">しゅじんこう</label>
+                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">しゅじんこう</label>
                             <input 
                                 value={mainChar} 
                                 onChange={(e) => setMainChar(e.target.value)}
@@ -99,25 +97,23 @@
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl min-h-[300px] flex items-center justify-center text-center border-8 border-white ring-1 ring-rose-100">
+                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl min-h-[300px] flex items-center justify-center text-center border-8 border-white ring-1 ring-rose-100 relative">
                                 <p className="text-2xl font-black leading-relaxed">{story[pageIndex].text}</p>
+                                <div className="absolute top-4 right-6 text-xs font-bold text-rose-300">{pageIndex + 1} / {story.length}</div>
                             </div>
                             <div className="flex justify-between items-center px-4">
-                                <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-2xl">⬅️</button>
-                                <span className="font-bold text-slate-400 bg-white px-6 py-2 rounded-full shadow-inner">{pageIndex + 1} / {story.length}</span>
-                                <button onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))} className="w-16 h-16 bg-rose-500 text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl">➡️</button>
+                                <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-slate-50 transition-all">⬅️</button>
+                                <button onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))} className="w-16 h-16 bg-rose-500 text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-rose-600 transition-all">➡️</button>
                             </div>
-                            <button onClick={() => setStep("setup")} className="w-full text-slate-300 text-[10px] font-black mt-12 hover:text-rose-400 transition-colors text-center uppercase tracking-widest">Go Back</button>
+                            <button onClick={() => setStep("setup")} className="w-full text-slate-300 text-[10px] font-black mt-12 hover:text-rose-400 text-center uppercase tracking-widest">Settings Back</button>
                         </div>
                     )}
                 </div>
             );
         }
 
-        // 読み込み完了を待ってから開始
         window.onload = () => {
-            const rootElement = document.getElementById('root');
-            const root = ReactDOM.createRoot(rootElement);
+            const root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(<App />);
         };
     </script>
