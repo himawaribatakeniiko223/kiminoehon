@@ -25,30 +25,38 @@
                 if (!apiKey) return alert("APIキーを入力してください");
                 setLoading(true);
                 try {
-                   // 「v1beta」から、より安定した「v1」に変更します
-                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    // 最新の v1 エンドポイントと gemini-2.0-flash を使用
+                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                     
                     const res = await fetch(url, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けのとっても優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。出力は以下のJSON形式のみで返して： {"pages": [{"text": "本文"}]}` }] }],
-                            generationConfig: { responseMimeType: "application/json" }
+                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けの優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。必ず以下のJSON形式だけで答えてください。余計な解説文はいりません： {"pages": [{"text": "本文"}]}` }] }],
+                            generationConfig: { 
+                                responseMimeType: "application/json"
+                            }
                         })
                     });
 
                     if (!res.ok) {
-                        const errBody = await res.json();
-                        throw new Error(errBody.error?.message || "通信エラー");
+                        const errData = await res.json();
+                        throw new Error(errData.error?.message || "通信エラー");
                     }
 
                     const data = await res.json();
-                    const result = JSON.parse(data.candidates[0].content.parts[0].text);
+                    const textResponse = data.candidates[0].content.parts[0].text;
+                    
+                    // JSONを安全に解析（余計な文字が入った場合への対策）
+                    const cleanJson = textResponse.replace(/```json|```/g, "").trim();
+                    const result = JSON.parse(cleanJson);
+                    
                     setStory(result.pages);
                     setStep("reader");
+                    setPageIndex(0);
                 } catch (e) {
                     console.error(e);
-                    alert("エラーの内容: " + e.message + "\n\n※APIキーが正しいか、Google AI Studioで有効になっているか確認してください。");
+                    alert("エラーが発生しました：\n" + e.message + "\n\n※APIキーを正しくコピーできているか、スペースが入っていないか確認してください。");
                 } finally {
                     setLoading(false);
                 }
@@ -68,14 +76,14 @@
                                 type="password" 
                                 value={apiKey} 
                                 onChange={(e) => setApiKey(e.target.value)}
-                                className="w-full p-3 bg-amber-50 rounded-xl mb-6 border border-amber-200 outline-none"
-                                placeholder="Google AI Studioで取得したキー"
+                                className="w-full p-3 bg-amber-50 rounded-xl mb-6 border border-amber-200 outline-none focus:ring-2 ring-amber-300"
+                                placeholder="AI Studioのキーをここに"
                             />
                             <label className="block text-sm font-bold text-slate-400 mb-2">しゅじんこう</label>
                             <input 
                                 value={mainChar} 
                                 onChange={(e) => setMainChar(e.target.value)}
-                                className="w-full p-3 bg-rose-50 rounded-xl mb-8 font-bold outline-none"
+                                className="w-full p-3 bg-rose-50 rounded-xl mb-8 font-bold outline-none focus:ring-2 ring-rose-200"
                             />
                             <button 
                                 onClick={generateStory}
@@ -91,11 +99,11 @@
                                 <p className="text-2xl font-black leading-relaxed text-slate-800">{story[pageIndex].text}</p>
                             </div>
                             <div className="flex justify-between items-center px-2">
-                                <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="p-4 bg-white rounded-2xl shadow">⬅️</button>
-                                <span className="font-bold text-slate-400">{pageIndex + 1} / {story.length}</span>
-                                <button onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))} className="p-4 bg-rose-500 text-white rounded-2xl shadow">➡️</button>
+                                <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="p-4 bg-white rounded-2xl shadow hover:bg-slate-50 transition-colors">⬅️</button>
+                                <span className="font-bold text-slate-400 bg-white px-4 py-1 rounded-full shadow-sm">{pageIndex + 1} / {story.length}</span>
+                                <button onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))} className="p-4 bg-rose-500 text-white rounded-2xl shadow hover:bg-rose-600 transition-colors">➡️</button>
                             </div>
-                            <button onClick={() => setStep("setup")} className="w-full text-slate-400 text-sm font-bold mt-10">設定にもどる</button>
+                            <button onClick={() => setStep("setup")} className="w-full text-slate-400 text-sm font-bold mt-10 hover:text-rose-500 transition-colors text-center">設定にもどる</button>
                         </div>
                     )}
                 </div>
