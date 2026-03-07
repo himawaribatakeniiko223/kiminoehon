@@ -5,27 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AIえほんメーカー</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-[#FFFBF5]">
-    <div id="root"></div>
+<body class="bg-[#FFFBF5] text-[#4A3F35] font-sans">
+    <div id="root">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="text-center">
+                <p className="text-xl font-bold">じゅんびちゅう...</p>
+                <p className="text-sm text-slate-400">10秒たっても変わらない場合は、再読み込みしてください。</p>
+            </div>
+        </div>
+    </div>
 
     <script type="text/babel">
+        const { useState } = React;
+
         function App() {
-            const [step, setStep] = React.useState("setup");
-            const [apiKey, setApiKey] = React.useState("");
-            const [mainChar, setMainChar] = React.useState("こうあちゃん");
-            const [story, setStory] = React.useState([]);
-            const [pageIndex, setPageIndex] = React.useState(0);
-            const [loading, setLoading] = React.useState(false);
+            const [step, setStep] = useState("setup");
+            const [apiKey, setApiKey] = useState("");
+            const [mainChar, setMainChar] = useState("こうあちゃん");
+            const [story, setStory] = useState([]);
+            const [pageIndex, setPageIndex] = useState(0);
+            const [loading, setLoading] = useState(false);
 
             const generateStory = async () => {
                 if (!apiKey) return alert("APIキーを入力してください");
                 setLoading(true);
                 
-                // 2026年現在、最も安定している v1 エンドポイントを使用
                 const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
                 try {
@@ -33,36 +41,85 @@
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けの優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。必ずこのJSON形式だけで返して。余計な説明は不要： {"pages": [{"text": "本文"}]}` }] }]
+                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けの優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。必ずこのJSON形式だけで返して： {"pages": [{"text": "本文"}]}` }] }]
                         })
                     });
 
                     if (!res.ok) {
-                        const errorData = await res.json();
-                        throw new Error(errorData.error?.message || "通信エラー");
+                        const errData = await res.json();
+                        throw new Error(errData.error?.message || "通信エラー");
                     }
 
                     const data = await res.json();
                     let textResponse = data.candidates[0].content.parts[0].text;
-                    
-                    // AIがMarkdown形式（```json ... ```）で返してきた場合のクリーニング
                     const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) throw new Error("AIの返答からお話が見つかりませんでした。");
+                    if (!jsonMatch) throw new Error("お話がうまく作れませんでした。もう一度ボタンを押してみてね。");
                     
                     const result = JSON.parse(jsonMatch[0]);
                     setStory(result.pages);
                     setStep("reader");
                     setPageIndex(0);
                 } catch (e) {
-                    console.error(e);
-                    alert("エラー: " + e.message + "\n\n【ヒント】キーのコピーミス（前後の空白）がないか確認してください。");
+                    alert("エラー: " + e.message);
                 } finally {
                     setLoading(false);
                 }
             };
 
             return (
-                <div className="max-w-md mx-auto min-h-screen p-6 font-sans text-[#4A3F35]">
+                <div className="max-w-md mx-auto min-h-screen p-6">
                     <header className="flex items-center gap-3 mb-8">
-                        <div className="bg-rose-500 p-2 rounded-lg text-white font-bold text-xl shadow-lg shadow-rose-100">📖</div>
-                        <h1 className="text-xl font
+                        <div className="bg-rose-500 p-2 rounded-lg text-white font-bold text-xl shadow-lg">📖</div>
+                        <h1 className="text-xl font-bold tracking-tight">AIえほんメーカー</h1>
+                    </header>
+
+                    {step === "setup" ? (
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-rose-50">
+                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">Google Gemini API Key</label>
+                            <input 
+                                type="password" 
+                                value={apiKey} 
+                                onChange={(e) => setApiKey(e.target.value.trim())}
+                                className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none transition-all"
+                                placeholder="キーを貼り付けてください"
+                            />
+                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest">しゅじんこう</label>
+                            <input 
+                                value={mainChar} 
+                                onChange={(e) => setMainChar(e.target.value)}
+                                className="w-full p-4 bg-rose-50 rounded-2xl mb-10 font-bold border-2 border-transparent focus:border-rose-200 outline-none transition-all"
+                            />
+                            <button 
+                                onClick={generateStory}
+                                disabled={loading}
+                                className="w-full bg-rose-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-rose-200 hover:bg-rose-600 active:scale-95 transition-all text-lg"
+                            >
+                                {loading ? "AIがお話を書いています..." : "✨ えほんをつくる！"}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl min-h-[300px] flex items-center justify-center text-center border-8 border-white ring-1 ring-rose-100">
+                                <p className="text-2xl font-black leading-relaxed">{story[pageIndex].text}</p>
+                            </div>
+                            <div className="flex justify-between items-center px-4">
+                                <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-2xl">⬅️</button>
+                                <span className="font-bold text-slate-400 bg-white px-6 py-2 rounded-full shadow-inner">{pageIndex + 1} / {story.length}</span>
+                                <button onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))} className="w-16 h-16 bg-rose-500 text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl">➡️</button>
+                            </div>
+                            <button onClick={() => setStep("setup")} className="w-full text-slate-300 text-[10px] font-black mt-12 hover:text-rose-400 transition-colors text-center uppercase tracking-widest">Go Back</button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 読み込み完了を待ってから開始
+        window.onload = () => {
+            const rootElement = document.getElementById('root');
+            const root = ReactDOM.createRoot(rootElement);
+            root.render(<App />);
+        };
+    </script>
+</body>
+</html>
