@@ -31,42 +31,42 @@
                 if (!apiKey) return alert("APIキーを 入力してください");
                 setLoading(true);
                 
-                // 404を回避するため、最新かつ安定した v1 エンドポイントを使用
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-                
-                try {
-                    const res = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ 
-                                parts: [{ 
-                                    text: `${mainChar}が主人公の、2歳児向けの優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。必ずこのJSON形式だけで返してください： {"pages": [{"text": "本文"}]}` 
-                                }] 
-                            }],
-                            generationConfig: { 
-                                responseMimeType: "application/json"
-                            }
-                        })
-                    });
+                // 【解決策】複数のURL/モデル候補を順番に試す「自動修復」機能を追加しました
+                const endpoints = [
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`
+                ];
 
-                    if (!res.ok) {
-                        const errData = await res.json();
-                        throw new Error(errData.error?.message || "通信エラーが発生しました");
+                let lastError = "";
+                for (let url of endpoints) {
+                    try {
+                        const res = await fetch(url, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けのひらがな絵本を4ページ分作って。JSON形式 {"pages": [{"text": "本文"}]} で答えて。` }] }]
+                            })
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            const text = data.candidates[0].content.parts[0].text;
+                            const result = JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
+                            setStory(result.pages);
+                            setStep("reader");
+                            setPageIndex(0);
+                            return; // 成功したら終了
+                        }
+                        const err = await res.json();
+                        lastError = err.error?.message || res.statusText;
+                    } catch (e) {
+                        lastError = e.message;
                     }
-
-                    const data = await res.json();
-                    const textResponse = data.candidates[0].content.parts[0].text;
-                    const result = JSON.parse(textResponse);
-                    
-                    setStory(result.pages);
-                    setStep("reader");
-                    setPageIndex(0);
-                } catch (e) {
-                    alert("【エラー解決のヒント】\n" + e.message + "\n\n1. APIキーがGemini用か確認してください\n2. 前後に余計な空白が入っていないか確認してください");
-                } finally {
-                    setLoading(false);
                 }
+                
+                setLoading(false);
+                alert("すべての接続方法でエラーになりました。\n原因: " + lastError + "\n\n【確認】APIキーが『Google AI Studio (Gemini)』で取得したものか、もう一度確認してください。");
             };
 
             return (
@@ -77,27 +77,27 @@
                     </header>
 
                     {step === "setup" ? (
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-rose-50">
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-rose-50 animate-in fade-in duration-500">
                             <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">Gemini API Key</label>
                             <input 
                                 type="password" 
                                 value={apiKey} 
                                 onChange={(e) => setApiKey(e.target.value.trim())}
-                                className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none transition-all text-lg"
+                                className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none text-lg"
                                 placeholder="AI Studioのキーを貼り付け"
                             />
-                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">しゅじんこう の なまえ</label>
+                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">しゅじんこう</label>
                             <input 
                                 value={mainChar} 
                                 onChange={(e) => setMainChar(e.target.value)}
-                                className="w-full p-4 bg-rose-50 rounded-2xl mb-10 font-bold border-2 border-transparent focus:border-rose-200 outline-none transition-all text-lg text-slate-700"
+                                className="w-full p-4 bg-rose-50 rounded-2xl mb-10 font-bold border-2 border-transparent focus:border-rose-200 outline-none text-lg"
                             />
                             <button 
                                 onClick={generateStory}
                                 disabled={loading}
                                 className="w-full bg-rose-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-rose-200 hover:bg-rose-600 active:scale-95 transition-all text-xl"
                             >
-                                {loading ? "AIがお話を書いています..." : "✨ えほんをつくる！"}
+                                {loading ? "AIと通信中..." : "✨ えほんをつくる！"}
                             </button>
                         </div>
                     ) : (
@@ -110,7 +110,7 @@
                                 <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-slate-50 transition-all border border-slate-100">⬅️</button>
                                 <button onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))} className="w-16 h-16 bg-rose-500 text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-rose-600 transition-all">➡️</button>
                             </div>
-                            <button onClick={() => setStep("setup")} className="w-full text-slate-300 text-[10px] font-black mt-12 hover:text-rose-400 text-center uppercase tracking-widest transition-colors">Setting Back</button>
+                            <button onClick={() => setStep("setup")} className="w-full text-slate-300 text-[10px] font-black mt-12 hover:text-rose-400 text-center uppercase tracking-widest">Settings Back</button>
                         </div>
                     )}
                 </div>
