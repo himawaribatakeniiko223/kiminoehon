@@ -3,32 +3,32 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AIえほんメーカー 試作版</title>
+  <title>AIえほんメーカー</title>
   <style>
     :root{
-      --bg:#f8f5f0;
+      --bg:#fff8f2;
       --card:#ffffff;
       --main:#ef476f;
       --text:#24324a;
-      --muted:#7a8799;
-      --line:#e8e2d8;
-      --accent:#f7c948;
+      --muted:#6f7d90;
+      --line:#eadfd2;
+      --sub:#f4f7fb;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       background:var(--bg);
       color:var(--text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
     .wrap{
-      max-width:960px;
+      max-width:1000px;
       margin:0 auto;
       padding:20px;
     }
     .title{
       text-align:center;
-      margin:10px 0 20px;
+      margin:8px 0 20px;
     }
     .title h1{
       margin:0;
@@ -41,114 +41,108 @@
     }
     .grid{
       display:grid;
-      grid-template-columns:340px 1fr;
+      grid-template-columns:360px 1fr;
       gap:20px;
     }
     .card{
       background:var(--card);
       border:1px solid var(--line);
       border-radius:24px;
-      box-shadow:0 10px 30px rgba(0,0,0,.06);
+      box-shadow:0 8px 28px rgba(0,0,0,.06);
       padding:18px;
     }
     label{
       display:block;
+      margin:12px 0 6px;
       font-size:13px;
       font-weight:700;
-      margin:12px 0 6px;
       color:var(--muted);
     }
-    input, textarea, select{
+    input, select, textarea{
       width:100%;
       border:1px solid #ddd;
       border-radius:14px;
       padding:12px 14px;
       font-size:15px;
-      background:#fffdf8;
+      background:#fffdfa;
     }
-    textarea{min-height:88px; resize:vertical}
     button{
       border:none;
       border-radius:16px;
       padding:14px 18px;
       font-size:16px;
-      font-weight:700;
+      font-weight:800;
       cursor:pointer;
     }
     .btn-main{
       width:100%;
       margin-top:16px;
       background:var(--main);
-      color:white;
+      color:#fff;
     }
     .btn-sub{
-      background:#eef2f8;
+      background:var(--sub);
       color:var(--text);
     }
-    .note{
+    .note, .small{
       font-size:12px;
       color:var(--muted);
       line-height:1.7;
-      margin-top:12px;
     }
-    .error{
+    .status, .error, .debug{
       margin-top:12px;
-      padding:12px 14px;
       border-radius:14px;
-      background:#fff1f3;
-      color:#b4233d;
+      padding:12px 14px;
       white-space:pre-wrap;
+      word-break:break-word;
       font-size:13px;
     }
     .status{
-      margin-top:12px;
-      padding:12px 14px;
-      border-radius:14px;
-      background:#f8fbff;
-      color:#3a5c88;
-      white-space:pre-wrap;
-      font-size:13px;
+      background:#eef7ff;
+      color:#2f5f91;
+    }
+    .error{
+      background:#fff1f3;
+      color:#b4233d;
+    }
+    .debug{
+      background:#f6f8fb;
+      color:#556274;
     }
     .viewerTop{
       display:flex;
       justify-content:space-between;
       align-items:center;
-      margin-bottom:12px;
+      margin-bottom:10px;
     }
     .pageCard{
       background:#fff;
       border:1px solid var(--line);
       border-radius:28px;
       padding:18px;
-      min-height:580px;
+      min-height:620px;
       display:grid;
-      grid-template-rows: 320px auto auto;
+      grid-template-rows:320px auto auto;
       gap:16px;
-      box-shadow:0 10px 30px rgba(0,0,0,.06);
+      box-shadow:0 8px 28px rgba(0,0,0,.06);
     }
     .imageBox{
       border-radius:22px;
-      overflow:hidden;
-      border:1px dashed #d7d0c3;
-      background:linear-gradient(180deg,#fff9ec,#f5f2ff);
+      border:1px dashed #d6cfc3;
+      background:linear-gradient(180deg,#fff9ec,#f3f2ff);
       display:flex;
       align-items:center;
       justify-content:center;
       text-align:center;
       padding:20px;
       position:relative;
-    }
-    .imageBox img{
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      display:block;
+      overflow:hidden;
     }
     .badge{
       position:absolute;
       top:12px;
       right:12px;
-      background:rgba(255,255,255,.88);
+      background:rgba(255,255,255,.9);
       border:1px solid #eee;
       border-radius:999px;
       padding:6px 10px;
@@ -158,10 +152,9 @@
     .storyText{
       font-size:30px;
       line-height:1.8;
-      font-weight:800;
+      font-weight:900;
       text-align:center;
-      letter-spacing:.02em;
-      padding:6px 12px;
+      padding:4px 10px;
     }
     .promptBox{
       background:#f8fafc;
@@ -182,19 +175,18 @@
     }
     .navCenter{
       color:var(--muted);
-      font-weight:700;
+      font-weight:800;
     }
-    .row{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    .small{
+    .pill{
+      display:inline-block;
+      padding:5px 10px;
+      border-radius:999px;
+      background:#fff4f6;
+      color:var(--main);
       font-size:12px;
-      color:var(--muted);
+      font-weight:800;
     }
-    @media (max-width: 860px){
+    @media (max-width: 900px){
       .grid{grid-template-columns:1fr}
       .pageCard{min-height:auto}
       .storyText{font-size:24px}
@@ -205,7 +197,7 @@
   <div class="wrap">
     <div class="title">
       <h1>📖 AIえほんメーカー</h1>
-      <p>ユーザー設定 → AIストーリー → 挿絵プロンプト生成 まで動く試作版</p>
+      <p>ユーザー設定 → AIストーリー → 挿絵プロンプト生成</p>
     </div>
 
     <div class="grid">
@@ -220,7 +212,7 @@
         <input id="characters" type="text" value="ぺんぺん" placeholder="例: ぺんぺん、うさちゃん" />
 
         <label>場面</label>
-        <input id="setting" type="text" value="はるの はなばたけ" placeholder="例: すいぞくかん、はなばたけ、もり" />
+        <input id="setting" type="text" value="はるの はなばたけ" placeholder="例: すいぞくかん、もり、うみべ" />
 
         <label>ページ数</label>
         <select id="pageCount">
@@ -240,21 +232,22 @@
         <label>お話の雰囲気</label>
         <select id="mood">
           <option value="やさしい">やさしい</option>
-          <option value="わくわく">わくわく</option>
           <option value="たのしい">たのしい</option>
+          <option value="わくわく">わくわく</option>
           <option value="あたたかい" selected>あたたかい</option>
         </select>
 
         <button id="generateBtn" class="btn-main">✨ えほんをつくる！</button>
 
-        <div class="note">
-          ・今のキーでできるのは、本文生成と挿絵プロンプト生成です。<br>
-          ・AI画像生成は、画像モデルが使えるキーになったらこの試作に接続できます。<br>
-          ・今は画像欄に「生成用プロンプト」を表示し、後でそこへ画像を差し込める形にしています。
+        <div class="note" style="margin-top:12px;">
+          ・本文生成と、ページごとの挿絵プロンプト生成に対応<br>
+          ・今回は <b>responseMimeType を使わず</b>、JSON文字列を安全に抜き出します<br>
+          ・画像生成モデルは別途接続できます
         </div>
 
         <div id="status" class="status" style="display:none;"></div>
         <div id="error" class="error" style="display:none;"></div>
+        <div id="debug" class="debug" style="display:none;"></div>
       </div>
 
       <div>
@@ -264,16 +257,16 @@
         </div>
 
         <div class="pageCard">
-          <div class="imageBox" id="imageBox">
+          <div class="imageBox">
             <div>
               <div style="font-size:48px;">🖼️</div>
-              <div style="font-weight:800; font-size:20px; margin-top:10px;">挿絵エリア</div>
+              <div style="font-weight:900; font-size:20px; margin-top:10px;">挿絵エリア</div>
               <div class="small" style="margin-top:8px;">
-                今は AI画像生成未接続です。<br>
-                下の「挿絵プロンプト」をあとで画像APIに渡せます。
+                今は本文に合わせた挿絵プロンプトを表示します。<br>
+                画像モデルが使えるようになったらここに絵を出せます。
               </div>
             </div>
-            <div class="badge" id="imageModeBadge">画像: 未接続</div>
+            <div class="badge">画像: 未接続</div>
           </div>
 
           <div class="storyText" id="storyText">ここに本文が表示されます</div>
@@ -310,27 +303,37 @@
 
     const $ = (id) => document.getElementById(id);
 
-    function setStatus(msg){
+    function setStatus(msg) {
       $("status").style.display = "block";
       $("status").textContent = msg;
     }
 
-    function clearStatus(){
+    function clearStatus() {
       $("status").style.display = "none";
       $("status").textContent = "";
     }
 
-    function setError(msg){
+    function setError(msg) {
       $("error").style.display = "block";
       $("error").textContent = msg;
     }
 
-    function clearError(){
+    function clearError() {
       $("error").style.display = "none";
       $("error").textContent = "";
     }
 
-    async function fetchJson(url, options){
+    function setDebug(msg) {
+      $("debug").style.display = "block";
+      $("debug").textContent = msg;
+    }
+
+    function clearDebug() {
+      $("debug").style.display = "none";
+      $("debug").textContent = "";
+    }
+
+    async function fetchJson(url, options) {
       const res = await fetch(url, options);
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -339,56 +342,89 @@
       return data;
     }
 
-    async function getAvailableModels(apiKey){
+    async function getAvailableModels(apiKey) {
       const url = `https://generativelanguage.googleapis.com/v1/models?key=${encodeURIComponent(apiKey)}`;
       const data = await fetchJson(url);
       return (data.models || []).map(m => m.name || "");
     }
 
-    function extractTextFromGemini(data){
+    function extractTextFromGemini(data) {
       const parts = data?.candidates?.[0]?.content?.parts || [];
       return parts.map(p => p.text || "").join("\n").trim();
     }
 
-    function tryParseJson(text){
+    function tryParseBookJson(text) {
       if (!text) return null;
 
+      // ```json ... ``` を優先
       const fenced =
         text.match(/```json\s*([\s\S]*?)\s*```/i) ||
         text.match(/```\s*([\s\S]*?)\s*```/i);
 
       const raw = fenced ? fenced[1] : text;
 
+      // そのまま JSON として試す
       try {
         return JSON.parse(raw);
-      } catch(e) {}
+      } catch (e) {}
 
+      // 最初の { から最後の } を拾う
       try {
         const first = raw.indexOf("{");
         const last = raw.lastIndexOf("}");
         if (first !== -1 && last !== -1 && last > first) {
           return JSON.parse(raw.slice(first, last + 1));
         }
-      } catch(e) {}
+      } catch (e) {}
 
       return null;
     }
 
-    function normalizePages(obj, count){
-      if (!obj || !Array.isArray(obj.pages)) return null;
-      const arr = obj.pages.map((p, i) => ({
-        page: i + 1,
-        text: String(p.text || "").trim(),
-        imagePrompt: String(p.imagePrompt || "").trim()
-      })).filter(p => p.text);
+    function splitFallbackPages(text, count) {
+      const chunks = text
+        .split(/\n{2,}/)
+        .map(s => s.trim())
+        .filter(Boolean);
 
-      return arr.slice(0, count);
+      if (!chunks.length) {
+        return Array.from({ length: count }, (_, i) => ({
+          page: i + 1,
+          text: text.trim() || "おはなしを よみこめませんでした。",
+          imagePrompt: "やさしい絵本風、主人公、あたたかい雰囲気"
+        }));
+      }
+
+      return chunks.slice(0, count).map((chunk, i) => ({
+        page: i + 1,
+        text: chunk,
+        imagePrompt: "やさしい絵本風、本文に合う場面、あたたかい色、子ども向け"
+      }));
     }
 
-    async function generateBookData(apiKey, model, settings){
+    function normalizePages(obj, rawText, count, settings) {
+      if (obj && Array.isArray(obj.pages)) {
+        const arr = obj.pages.map((p, i) => ({
+          page: i + 1,
+          text: String(p?.text || "").trim(),
+          imagePrompt: String(p?.imagePrompt || "").trim()
+        })).filter(p => p.text);
+
+        if (arr.length) return arr.slice(0, count);
+      }
+
+      return splitFallbackPages(rawText, count).map((p, i) => ({
+        page: i + 1,
+        text: p.text,
+        imagePrompt:
+          p.imagePrompt ||
+          `${settings.artStyle}、${settings.hero}、${settings.characters}、${settings.setting}、${settings.mood}、子ども向け絵本の1ページ、やさしい色合い`
+      }));
+    }
+
+    async function generateBookData(apiKey, model, settings) {
       const prompt = `
-あなたは子ども向け絵本の作家と、挿絵ディレクターです。
-以下の設定で、${settings.pageCount}ページの幼児向け絵本を作ってください。
+あなたは子ども向け絵本の作家です。
+次の設定で、${settings.pageCount}ページの絵本を作ってください。
 
 設定:
 - 主人公: ${settings.hero}
@@ -405,27 +441,29 @@
 - 主人公は毎ページに出す
 - こわくしない
 - 最後はあたたかく終える
-- 各ページごとに、その本文に合う「挿絵生成用プロンプト」も作る
+- 各ページごとに、その本文に合う挿絵プロンプトも作る
 - 挿絵プロンプトには、構図、登場人物、表情、背景、色味、絵柄を入れる
-- 返答はJSONのみ
+- 返答はできるだけJSONだけにする
 
-出力形式:
+返答形式の例:
 {
   "pages": [
     {
-      "text": "本文",
-      "imagePrompt": "挿絵用プロンプト"
+      "text": "こうあちゃんは はなばたけを あるきました。",
+      "imagePrompt": "やさしい絵本風。こうあちゃんが春の花畑を歩いている。明るい表情。やわらかい光。あたたかい色合い。"
     }
   ]
 }
       `.trim();
 
       const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
       const body = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
+        contents: [
+          {
+            parts: [{ text: prompt }]
+          }
+        ]
       };
 
       const data = await fetchJson(url, {
@@ -435,17 +473,21 @@
       });
 
       const text = extractTextFromGemini(data);
-      const parsed = tryParseJson(text);
-      const normalized = normalizePages(parsed, settings.pageCount);
-
-      if (!normalized || !normalized.length) {
-        throw new Error("ページJSONの解析に失敗しました。");
+      if (!text) {
+        throw new Error("モデルから本文が返ってきませんでした。");
       }
 
-      return normalized;
+      const parsed = tryParseBookJson(text);
+      const normalized = normalizePages(parsed, text, settings.pageCount, settings);
+
+      if (!normalized || !normalized.length) {
+        throw new Error("ページ解析に失敗しました。");
+      }
+
+      return { pages: normalized, rawText: text };
     }
 
-    function updateViewer(){
+    function updateViewer() {
       const total = pages.length;
       const page = pages[currentIndex];
 
@@ -477,6 +519,7 @@
 
     $("generateBtn").addEventListener("click", async () => {
       clearError();
+      clearDebug();
 
       const apiKey = $("apiKey").value.trim();
       const settings = {
@@ -495,32 +538,36 @@
 
       try {
         $("generateBtn").disabled = true;
-        setStatus("モデルを確認しています...");
+        setStatus("モデル一覧を確認しています...");
 
         const availableModels = await getAvailableModels(apiKey);
-        const usable = MODEL_CANDIDATES.filter(m => availableModels.includes(`models/${m}`));
+        const usableModels = MODEL_CANDIDATES.filter(m => availableModels.includes(`models/${m}`));
 
-        if (!usable.length) {
+        if (!usableModels.length) {
           throw new Error("使える本文モデルが見つかりませんでした。");
         }
 
-        let lastErr = "";
-        for (const model of usable) {
+        let errorLog = "";
+
+        for (const model of usableModels) {
           try {
             setStatus(`えほんを生成しています... (${model})`);
             const result = await generateBookData(apiKey, model, settings);
-            pages = result;
+
+            pages = result.pages;
             currentIndex = 0;
             usedModel = model;
+
             updateViewer();
-            setStatus("本文と挿絵プロンプトの生成が成功しました。");
+            setStatus("本文と挿絵プロンプトの生成に成功しました。");
+            setDebug(`使用モデル: ${model}\n\n最初のページ数: ${pages.length}`);
             return;
           } catch (e) {
-            lastErr += `[${model}] ${e.message}\n`;
+            errorLog += `[${model}] ${e.message}\n`;
           }
         }
 
-        throw new Error("すべての本文モデルで失敗しました。\n" + lastErr);
+        throw new Error("すべての本文モデルで失敗しました。\n" + errorLog);
       } catch (e) {
         setError(e.message);
       } finally {
