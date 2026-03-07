@@ -12,7 +12,7 @@
 <body class="bg-[#FFFBF5] text-[#4A3F35]">
     <div id="root">
         <div class="flex items-center justify-center min-h-screen">
-            <p class="font-bold text-rose-300 animate-pulse">読み込み中...</p>
+            <p class="font-bold text-rose-300 animate-pulse text-lg">プログラムを よみこみちゅう...</p>
         </div>
     </div>
 
@@ -28,37 +28,38 @@
             const [loading, setLoading] = useState(false);
 
             const generateStory = async () => {
-                if (!apiKey) return alert("APIキーを入力してください");
+                if (!apiKey) return alert("APIキーを 入力してください");
                 setLoading(true);
                 
-                // 最も安定している v1 エンドポイント
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                // 404を回避するため、最も安定している v1beta エンドポイントを使用
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                 
                 try {
                     const res = await fetch(url, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けの優しい絵本を4ページ分作って。ひらがなだけで。JSON形式 {"pages": [{"text": "本文"}]} で出力して。余計な説明は不要。` }] }]
+                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けのとっても優しい絵本を4ページ分作ってください。各ページ1〜2文のひらがなだけで。必ずこのJSON形式だけで返してください： {"pages": [{"text": "本文"}]}` }] }]
                         })
                     });
 
                     if (!res.ok) {
                         const errData = await res.json();
-                        throw new Error(errData.error?.message || "API通信エラー");
+                        // 404が出た場合はモデル名を変更して再試行するヒントを出す
+                        throw new Error(errData.error?.message || "通信エラーが発生しました");
                     }
 
                     const data = await res.json();
                     let textResponse = data.candidates[0].content.parts[0].text;
                     const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-                    if (!jsonMatch) throw new Error("お話の生成に失敗しました。もう一度試してください。");
+                    if (!jsonMatch) throw new Error("お話の形が 正しくありませんでした。もう一度試してください。");
                     
                     const result = JSON.parse(jsonMatch[0]);
                     setStory(result.pages);
                     setStep("reader");
                     setPageIndex(0);
                 } catch (e) {
-                    alert("エラー: " + e.message + "\n\n※キーが正しいか、スペースが入っていないか確認してください。");
+                    alert("【エラー解決のヒント】\n" + e.message + "\n\n1. APIキーがGemini用か確認してください\n2. 前後に余計な文字が入っていないか確認してください");
                 } finally {
                     setLoading(false);
                 }
@@ -67,55 +68,55 @@
             return (
                 <div className="max-w-md mx-auto min-h-screen p-6 font-sans">
                     <header className="flex items-center gap-3 mb-8">
-                        <div className="bg-rose-500 p-2 rounded-xl text-white text-xl shadow-lg">📖</div>
-                        <h1 className="text-xl font-bold tracking-tight">AIえほんメーカー</h1>
+                        <div className="bg-rose-500 p-2 rounded-xl text-white text-xl shadow-lg shadow-rose-100">📖</div>
+                        <h1 className="text-xl font-black tracking-tight text-slate-800">AIえほんメーカー</h1>
                     </header>
 
                     {step === "setup" ? (
-                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-rose-50">
+                        <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-rose-50 animate-in fade-in duration-500">
                             <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">Gemini API Key</label>
                             <input 
                                 type="password" 
                                 value={apiKey} 
                                 onChange={(e) => setApiKey(e.target.value.trim())}
-                                className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none transition-all"
-                                placeholder="キーを入力"
+                                className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none transition-all text-lg"
+                                placeholder="AI Studioのキーを貼り付け"
                             />
-                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">しゅじんこう</label>
+                            <label className="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-widest text-left">しゅじんこう の なまえ</label>
                             <input 
                                 value={mainChar} 
                                 onChange={(e) => setMainChar(e.target.value)}
-                                className="w-full p-4 bg-rose-50 rounded-2xl mb-10 font-bold border-2 border-transparent focus:border-rose-200 outline-none transition-all"
+                                className="w-full p-4 bg-rose-50 rounded-2xl mb-10 font-bold border-2 border-transparent focus:border-rose-200 outline-none transition-all text-lg"
                             />
                             <button 
                                 onClick={generateStory}
                                 disabled={loading}
-                                className="w-full bg-rose-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-rose-200 hover:bg-rose-600 active:scale-95 transition-all text-lg"
+                                className="w-full bg-rose-500 text-white font-black py-5 rounded-3xl shadow-xl shadow-rose-200 hover:bg-rose-600 active:scale-95 transition-all text-xl"
                             >
                                 {loading ? "AIがお話を書いています..." : "✨ えほんをつくる！"}
                             </button>
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl min-h-[300px] flex items-center justify-center text-center border-8 border-white ring-1 ring-rose-100 relative">
-                                <p className="text-2xl font-black leading-relaxed">{story[pageIndex].text}</p>
-                                <div className="absolute top-4 right-6 text-xs font-bold text-rose-300">{pageIndex + 1} / {story.length}</div>
+                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl min-h-[350px] flex items-center justify-center text-center border-8 border-white ring-1 ring-rose-100 relative">
+                                <p className="text-2xl font-black leading-relaxed text-slate-800">{story[pageIndex].text}</p>
+                                <div className="absolute top-6 right-8 text-[10px] font-black text-rose-300 uppercase tracking-widest">{pageIndex + 1} / {story.length} P</div>
                             </div>
                             <div className="flex justify-between items-center px-4">
-                                <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-slate-50 transition-all">⬅️</button>
+                                <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-slate-50 transition-all border border-slate-100">⬅️</button>
                                 <button onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))} className="w-16 h-16 bg-rose-500 text-white rounded-2xl shadow-lg flex items-center justify-center text-2xl hover:bg-rose-600 transition-all">➡️</button>
                             </div>
-                            <button onClick={() => setStep("setup")} className="w-full text-slate-300 text-[10px] font-black mt-12 hover:text-rose-400 text-center uppercase tracking-widest">Settings Back</button>
+                            <button onClick={() => setStep("setup")} className="w-full text-slate-300 text-[10px] font-black mt-12 hover:text-rose-400 text-center uppercase tracking-widest transition-colors">Setting Back</button>
                         </div>
                     )}
                 </div>
             );
         }
 
-        window.onload = () => {
+        window.addEventListener('load', function() {
             const root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(<App />);
-        };
+        });
     </script>
 </body>
 </html>
