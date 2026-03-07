@@ -3,318 +3,532 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AIえほんメーカー</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <title>AIえほんメーカー 試作版</title>
+  <style>
+    :root{
+      --bg:#f8f5f0;
+      --card:#ffffff;
+      --main:#ef476f;
+      --text:#24324a;
+      --muted:#7a8799;
+      --line:#e8e2d8;
+      --accent:#f7c948;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:960px;
+      margin:0 auto;
+      padding:20px;
+    }
+    .title{
+      text-align:center;
+      margin:10px 0 20px;
+    }
+    .title h1{
+      margin:0;
+      color:var(--main);
+      font-size:34px;
+    }
+    .title p{
+      margin:8px 0 0;
+      color:var(--muted);
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:340px 1fr;
+      gap:20px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:24px;
+      box-shadow:0 10px 30px rgba(0,0,0,.06);
+      padding:18px;
+    }
+    label{
+      display:block;
+      font-size:13px;
+      font-weight:700;
+      margin:12px 0 6px;
+      color:var(--muted);
+    }
+    input, textarea, select{
+      width:100%;
+      border:1px solid #ddd;
+      border-radius:14px;
+      padding:12px 14px;
+      font-size:15px;
+      background:#fffdf8;
+    }
+    textarea{min-height:88px; resize:vertical}
+    button{
+      border:none;
+      border-radius:16px;
+      padding:14px 18px;
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn-main{
+      width:100%;
+      margin-top:16px;
+      background:var(--main);
+      color:white;
+    }
+    .btn-sub{
+      background:#eef2f8;
+      color:var(--text);
+    }
+    .note{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.7;
+      margin-top:12px;
+    }
+    .error{
+      margin-top:12px;
+      padding:12px 14px;
+      border-radius:14px;
+      background:#fff1f3;
+      color:#b4233d;
+      white-space:pre-wrap;
+      font-size:13px;
+    }
+    .status{
+      margin-top:12px;
+      padding:12px 14px;
+      border-radius:14px;
+      background:#f8fbff;
+      color:#3a5c88;
+      white-space:pre-wrap;
+      font-size:13px;
+    }
+    .viewerTop{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    .pageCard{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:28px;
+      padding:18px;
+      min-height:580px;
+      display:grid;
+      grid-template-rows: 320px auto auto;
+      gap:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.06);
+    }
+    .imageBox{
+      border-radius:22px;
+      overflow:hidden;
+      border:1px dashed #d7d0c3;
+      background:linear-gradient(180deg,#fff9ec,#f5f2ff);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:20px;
+      position:relative;
+    }
+    .imageBox img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .badge{
+      position:absolute;
+      top:12px;
+      right:12px;
+      background:rgba(255,255,255,.88);
+      border:1px solid #eee;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      color:#666;
+    }
+    .storyText{
+      font-size:30px;
+      line-height:1.8;
+      font-weight:800;
+      text-align:center;
+      letter-spacing:.02em;
+      padding:6px 12px;
+    }
+    .promptBox{
+      background:#f8fafc;
+      border:1px solid #e7edf4;
+      border-radius:16px;
+      padding:12px;
+      font-size:13px;
+      line-height:1.7;
+      color:#516173;
+      white-space:pre-wrap;
+    }
+    .nav{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-top:16px;
+    }
+    .navCenter{
+      color:var(--muted);
+      font-weight:700;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .small{
+      font-size:12px;
+      color:var(--muted);
+    }
+    @media (max-width: 860px){
+      .grid{grid-template-columns:1fr}
+      .pageCard{min-height:auto}
+      .storyText{font-size:24px}
+    }
+  </style>
 </head>
-<body class="bg-[#FFFBF5] text-slate-800">
-  <div id="root"></div>
+<body>
+  <div class="wrap">
+    <div class="title">
+      <h1>📖 AIえほんメーカー</h1>
+      <p>ユーザー設定 → AIストーリー → 挿絵プロンプト生成 まで動く試作版</p>
+    </div>
 
-  <script type="text/babel">
-    const { useState } = React;
+    <div class="grid">
+      <div class="card">
+        <label>Gemini APIキー</label>
+        <input id="apiKey" type="password" placeholder="Google AI Studio の APIキー" />
 
-    function App() {
-      const [step, setStep] = useState("setup");
-      const [apiKey, setApiKey] = useState("");
-      const [mainChar, setMainChar] = useState("こうあちゃん");
-      const [pageCount, setPageCount] = useState(4);
-      const [story, setStory] = useState([]);
-      const [pageIndex, setPageIndex] = useState(0);
-      const [loading, setLoading] = useState(false);
-      const [errorMessage, setErrorMessage] = useState("");
-      const [debugInfo, setDebugInfo] = useState("");
-      const [usedModel, setUsedModel] = useState("");
+        <label>主人公</label>
+        <input id="hero" type="text" value="こうあちゃん" />
 
-      // このキーで使えるモデル候補を上から順に試す
-      const MODEL_CANDIDATES = [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-001",
-        "gemini-2.0-flash-lite",
-        "gemini-2.0-flash-lite-001",
-        "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
-        "gemini-2.5-pro"
-      ];
+        <label>登場人物</label>
+        <input id="characters" type="text" value="ぺんぺん" placeholder="例: ぺんぺん、うさちゃん" />
 
-      function extractText(data) {
-        const parts = data?.candidates?.[0]?.content?.parts || [];
-        return parts.map(p => p.text || "").join("\n").trim();
-      }
+        <label>場面</label>
+        <input id="setting" type="text" value="はるの はなばたけ" placeholder="例: すいぞくかん、はなばたけ、もり" />
 
-      function parsePagesFromText(text, count) {
-        if (!text) return null;
+        <label>ページ数</label>
+        <select id="pageCount">
+          <option value="4" selected>4ページ</option>
+          <option value="8">8ページ</option>
+          <option value="12">12ページ</option>
+        </select>
 
-        const fenced =
-          text.match(/```json\s*([\s\S]*?)\s*```/i) ||
-          text.match(/```\s*([\s\S]*?)\s*```/i);
+        <label>絵柄</label>
+        <select id="artStyle">
+          <option value="やさしい絵本風" selected>やさしい絵本風</option>
+          <option value="やわらかいアニメ風">やわらかいアニメ風</option>
+          <option value="水彩絵本風">水彩絵本風</option>
+          <option value="クレヨン風">クレヨン風</option>
+        </select>
 
-        const raw = fenced ? fenced[1] : text;
+        <label>お話の雰囲気</label>
+        <select id="mood">
+          <option value="やさしい">やさしい</option>
+          <option value="わくわく">わくわく</option>
+          <option value="たのしい">たのしい</option>
+          <option value="あたたかい" selected>あたたかい</option>
+        </select>
 
-        try {
-          const firstBrace = raw.indexOf("{");
-          const lastBrace = raw.lastIndexOf("}");
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            const obj = JSON.parse(raw.slice(firstBrace, lastBrace + 1));
-            if (Array.isArray(obj.pages)) {
-              const pages = obj.pages
-                .map((p) => {
-                  if (typeof p === "string") return { text: p.trim() };
-                  return { text: String(p?.text || "").trim() };
-                })
-                .filter(p => p.text);
+        <button id="generateBtn" class="btn-main">✨ えほんをつくる！</button>
 
-              if (pages.length > 0) return pages.slice(0, count);
-            }
-          }
-        } catch (e) {
-          // JSONでなくても段落分割へ進む
-        }
-
-        const chunks = raw
-          .split(/\n{2,}/)
-          .map(s => s.trim())
-          .filter(Boolean);
-
-        if (chunks.length > 0) {
-          return chunks.slice(0, count).map(s => ({ text: s }));
-        }
-
-        return null;
-      }
-
-      async function getAvailableModels(key) {
-        const url = `https://generativelanguage.googleapis.com/v1/models?key=${encodeURIComponent(key)}`;
-        const res = await fetch(url);
-        const data = await res.json().catch(() => null);
-
-        if (!res.ok) {
-          throw new Error(data?.error?.message || `モデル一覧取得失敗: HTTP ${res.status}`);
-        }
-
-        return (data.models || []).map(m => m.name || "");
-      }
-
-      async function generateWithModel(key, model, hero, count) {
-        const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-
-        const prompt = `
-あなたは子ども向け絵本の作家です。
-${hero}が主人公の、2歳児向けのやさしいひらがな絵本を${count}ページ作ってください。
-
-条件:
-- なるべくひらがなを使う
-- 1ページは1〜2文
-- こわくしない
-- やさしい終わり方にする
-- 主人公は毎ページに出す
-- 説明文は不要
-- できれば以下のJSON形式で返す
-{"pages":[{"text":"1ページ目"},{"text":"2ページ目"}]}
-        `.trim();
-
-        const body = {
-          contents: [
-            {
-              parts: [{ text: prompt }]
-            }
-          ]
-        };
-
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body)
-        });
-
-        const data = await res.json().catch(() => null);
-
-        if (!res.ok) {
-          throw new Error(data?.error?.message || `HTTP ${res.status}`);
-        }
-
-        const text = extractText(data);
-        if (!text) {
-          throw new Error("本文が返ってきませんでした。");
-        }
-
-        const pages = parsePagesFromText(text, count);
-        if (!pages || pages.length === 0) {
-          throw new Error("返答の解析に失敗しました。\n\n" + text);
-        }
-
-        return pages;
-      }
-
-      async function generateStory() {
-        const key = apiKey.trim();
-        const hero = mainChar.trim() || "こうあちゃん";
-
-        if (!key) {
-          alert("APIキーを入力してください");
-          return;
-        }
-
-        setLoading(true);
-        setErrorMessage("");
-        setDebugInfo("");
-        setUsedModel("");
-
-        try {
-          const availableModels = await getAvailableModels(key);
-
-          const usableModels = MODEL_CANDIDATES.filter(model =>
-            availableModels.includes(`models/${model}`)
-          );
-
-          if (usableModels.length === 0) {
-            throw new Error(
-              "使える候補モデルが見つかりませんでした。\n\n利用可能モデル:\n" +
-              availableModels.join("\n")
-            );
-          }
-
-          let lastError = "";
-
-          for (const model of usableModels) {
-            try {
-              const pages = await generateWithModel(key, model, hero, pageCount);
-              setStory(pages);
-              setPageIndex(0);
-              setUsedModel(model);
-              setDebugInfo("使用モデル: " + model);
-              setStep("reader");
-              setLoading(false);
-              return;
-            } catch (e) {
-              lastError += `[${model}] ${e.message}\n\n`;
-            }
-          }
-
-          throw new Error("すべての候補モデルで失敗しました。\n\n" + lastError);
-        } catch (e) {
-          setErrorMessage(e.message);
-          setDebugInfo(String(e.stack || e.message || e));
-          alert("エラー:\n" + e.message);
-        } finally {
-          setLoading(false);
-        }
-      }
-
-      return (
-        <div className="max-w-md mx-auto min-h-screen p-6 font-sans">
-          <header className="mb-8 text-center">
-            <h1 className="text-3xl font-black text-rose-500">📖 AIえほんメーカー</h1>
-            <p className="text-sm text-slate-500 mt-2">使えるモデルを自動で選ぶ版</p>
-          </header>
-
-          {step === "setup" ? (
-            <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-rose-100">
-              <label className="block text-xs font-bold text-slate-400 mb-2">APIキー</label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none"
-                placeholder="Google AI Studio の APIキー"
-                autoComplete="off"
-              />
-
-              <label className="block text-xs font-bold text-slate-400 mb-2">しゅじんこう</label>
-              <input
-                value={mainChar}
-                onChange={(e) => setMainChar(e.target.value)}
-                className="w-full p-4 bg-rose-50 rounded-2xl mb-6 font-bold border-2 border-transparent focus:border-rose-200 outline-none text-lg"
-              />
-
-              <label className="block text-xs font-bold text-slate-400 mb-2">ぺーじすう</label>
-              <select
-                value={pageCount}
-                onChange={(e) => setPageCount(Number(e.target.value))}
-                className="w-full p-4 bg-sky-50 rounded-2xl mb-8 font-bold border-2 border-transparent focus:border-sky-200 outline-none text-lg"
-              >
-                <option value={4}>4ページ</option>
-                <option value={8}>8ページ</option>
-                <option value={12}>12ページ</option>
-              </select>
-
-              <button
-                onClick={generateStory}
-                disabled={loading}
-                className="w-full bg-rose-500 text-white font-black py-5 rounded-3xl shadow-xl hover:bg-rose-600 transition-all text-xl disabled:opacity-60"
-              >
-                {loading ? "つうしんちゅう..." : "✨ えほんをつくる！"}
-              </button>
-
-              <div className="mt-6 text-xs text-slate-500 leading-6">
-                <p>・まずモデル一覧を確認します</p>
-                <p>・使える候補だけを順番に試します</p>
-                <p>・最初のおすすめは gemini-2.0-flash です</p>
-              </div>
-
-              {errorMessage && (
-                <div className="mt-6 bg-red-50 border border-red-200 rounded-2xl p-4">
-                  <p className="text-sm font-bold text-red-600">エラー</p>
-                  <p className="text-sm text-red-500 mt-2 whitespace-pre-wrap break-words">{errorMessage}</p>
-                </div>
-              )}
-
-              {debugInfo && (
-                <details className="mt-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                  <summary className="cursor-pointer text-sm font-bold text-slate-600">詳細</summary>
-                  <pre className="text-xs text-slate-600 mt-3 whitespace-pre-wrap break-words">{debugInfo}</pre>
-                </details>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="bg-white p-10 rounded-[3rem] shadow-2xl min-h-[320px] flex items-center justify-center border-8 border-white text-center relative">
-                <div className="absolute top-5 right-6 text-xs font-bold text-rose-300">
-                  {pageIndex + 1} / {story.length}
-                </div>
-                <p className="text-2xl font-black leading-relaxed">
-                  {story[pageIndex]?.text || ""}
-                </p>
-              </div>
-
-              <div className="text-center text-xs text-slate-400">
-                使用モデル: {usedModel}
-              </div>
-
-              <div className="flex justify-between items-center gap-4">
-                <button
-                  onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
-                  disabled={pageIndex === 0}
-                  className="w-16 h-16 bg-white rounded-2xl shadow-lg text-2xl border border-slate-100 disabled:opacity-40"
-                >
-                  ⬅️
-                </button>
-
-                <span className="font-bold text-slate-400">{pageIndex + 1} / {story.length}</span>
-
-                <button
-                  onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))}
-                  disabled={pageIndex === story.length - 1}
-                  className="w-16 h-16 bg-rose-500 text-white rounded-2xl shadow-lg text-2xl disabled:opacity-40"
-                >
-                  ➡️
-                </button>
-              </div>
-
-              <button
-                onClick={() => setStep("setup")}
-                className="w-full text-slate-400 text-sm mt-10"
-              >
-                もどる
-              </button>
-            </div>
-          )}
+        <div class="note">
+          ・今のキーでできるのは、本文生成と挿絵プロンプト生成です。<br>
+          ・AI画像生成は、画像モデルが使えるキーになったらこの試作に接続できます。<br>
+          ・今は画像欄に「生成用プロンプト」を表示し、後でそこへ画像を差し込める形にしています。
         </div>
-      );
+
+        <div id="status" class="status" style="display:none;"></div>
+        <div id="error" class="error" style="display:none;"></div>
+      </div>
+
+      <div>
+        <div class="viewerTop">
+          <div class="small" id="modelInfo">使用モデル: 未実行</div>
+          <div class="small" id="pageInfo">0 / 0</div>
+        </div>
+
+        <div class="pageCard">
+          <div class="imageBox" id="imageBox">
+            <div>
+              <div style="font-size:48px;">🖼️</div>
+              <div style="font-weight:800; font-size:20px; margin-top:10px;">挿絵エリア</div>
+              <div class="small" style="margin-top:8px;">
+                今は AI画像生成未接続です。<br>
+                下の「挿絵プロンプト」をあとで画像APIに渡せます。
+              </div>
+            </div>
+            <div class="badge" id="imageModeBadge">画像: 未接続</div>
+          </div>
+
+          <div class="storyText" id="storyText">ここに本文が表示されます</div>
+
+          <div>
+            <div class="small" style="margin-bottom:6px;">挿絵プロンプト</div>
+            <div class="promptBox" id="promptBox">ここにページごとの挿絵プロンプトが表示されます</div>
+          </div>
+        </div>
+
+        <div class="nav">
+          <button id="prevBtn" class="btn-sub">⬅ 前へ</button>
+          <div class="navCenter" id="navCenter">0 / 0</div>
+          <button id="nextBtn" class="btn-main" style="width:auto; margin-top:0; padding:14px 20px;">次へ ➡</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MODEL_CANDIDATES = [
+      "gemini-2.5-flash",
+      "gemini-2.5-flash-lite",
+      "gemini-2.5-pro",
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-001",
+      "gemini-2.0-flash-lite",
+      "gemini-2.0-flash-lite-001"
+    ];
+
+    let pages = [];
+    let currentIndex = 0;
+    let usedModel = "";
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(msg){
+      $("status").style.display = "block";
+      $("status").textContent = msg;
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    function clearStatus(){
+      $("status").style.display = "none";
+      $("status").textContent = "";
+    }
+
+    function setError(msg){
+      $("error").style.display = "block";
+      $("error").textContent = msg;
+    }
+
+    function clearError(){
+      $("error").style.display = "none";
+      $("error").textContent = "";
+    }
+
+    async function fetchJson(url, options){
+      const res = await fetch(url, options);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error?.message || `HTTP ${res.status}`);
+      }
+      return data;
+    }
+
+    async function getAvailableModels(apiKey){
+      const url = `https://generativelanguage.googleapis.com/v1/models?key=${encodeURIComponent(apiKey)}`;
+      const data = await fetchJson(url);
+      return (data.models || []).map(m => m.name || "");
+    }
+
+    function extractTextFromGemini(data){
+      const parts = data?.candidates?.[0]?.content?.parts || [];
+      return parts.map(p => p.text || "").join("\n").trim();
+    }
+
+    function tryParseJson(text){
+      if (!text) return null;
+
+      const fenced =
+        text.match(/```json\s*([\s\S]*?)\s*```/i) ||
+        text.match(/```\s*([\s\S]*?)\s*```/i);
+
+      const raw = fenced ? fenced[1] : text;
+
+      try {
+        return JSON.parse(raw);
+      } catch(e) {}
+
+      try {
+        const first = raw.indexOf("{");
+        const last = raw.lastIndexOf("}");
+        if (first !== -1 && last !== -1 && last > first) {
+          return JSON.parse(raw.slice(first, last + 1));
+        }
+      } catch(e) {}
+
+      return null;
+    }
+
+    function normalizePages(obj, count){
+      if (!obj || !Array.isArray(obj.pages)) return null;
+      const arr = obj.pages.map((p, i) => ({
+        page: i + 1,
+        text: String(p.text || "").trim(),
+        imagePrompt: String(p.imagePrompt || "").trim()
+      })).filter(p => p.text);
+
+      return arr.slice(0, count);
+    }
+
+    async function generateBookData(apiKey, model, settings){
+      const prompt = `
+あなたは子ども向け絵本の作家と、挿絵ディレクターです。
+以下の設定で、${settings.pageCount}ページの幼児向け絵本を作ってください。
+
+設定:
+- 主人公: ${settings.hero}
+- 登場人物: ${settings.characters}
+- 場面: ${settings.setting}
+- 雰囲気: ${settings.mood}
+- 絵柄: ${settings.artStyle}
+
+条件:
+- 対象年齢は3歳前後
+- 文章はやさしい日本語
+- なるべくひらがなを多く使う
+- 1ページ 1〜2文
+- 主人公は毎ページに出す
+- こわくしない
+- 最後はあたたかく終える
+- 各ページごとに、その本文に合う「挿絵生成用プロンプト」も作る
+- 挿絵プロンプトには、構図、登場人物、表情、背景、色味、絵柄を入れる
+- 返答はJSONのみ
+
+出力形式:
+{
+  "pages": [
+    {
+      "text": "本文",
+      "imagePrompt": "挿絵用プロンプト"
+    }
+  ]
+}
+      `.trim();
+
+      const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      };
+
+      const data = await fetchJson(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      const text = extractTextFromGemini(data);
+      const parsed = tryParseJson(text);
+      const normalized = normalizePages(parsed, settings.pageCount);
+
+      if (!normalized || !normalized.length) {
+        throw new Error("ページJSONの解析に失敗しました。");
+      }
+
+      return normalized;
+    }
+
+    function updateViewer(){
+      const total = pages.length;
+      const page = pages[currentIndex];
+
+      $("modelInfo").textContent = usedModel ? `使用モデル: ${usedModel}` : "使用モデル: 未実行";
+      $("pageInfo").textContent = `${total ? currentIndex + 1 : 0} / ${total}`;
+      $("navCenter").textContent = `${total ? currentIndex + 1 : 0} / ${total}`;
+
+      if (!page) {
+        $("storyText").textContent = "ここに本文が表示されます";
+        $("promptBox").textContent = "ここにページごとの挿絵プロンプトが表示されます";
+        return;
+      }
+
+      $("storyText").textContent = page.text;
+      $("promptBox").textContent = page.imagePrompt || "挿絵プロンプトなし";
+    }
+
+    $("prevBtn").addEventListener("click", () => {
+      if (!pages.length) return;
+      currentIndex = Math.max(0, currentIndex - 1);
+      updateViewer();
+    });
+
+    $("nextBtn").addEventListener("click", () => {
+      if (!pages.length) return;
+      currentIndex = Math.min(pages.length - 1, currentIndex + 1);
+      updateViewer();
+    });
+
+    $("generateBtn").addEventListener("click", async () => {
+      clearError();
+
+      const apiKey = $("apiKey").value.trim();
+      const settings = {
+        hero: $("hero").value.trim() || "こうあちゃん",
+        characters: $("characters").value.trim() || "ぺんぺん",
+        setting: $("setting").value.trim() || "はるの はなばたけ",
+        pageCount: Number($("pageCount").value),
+        artStyle: $("artStyle").value,
+        mood: $("mood").value
+      };
+
+      if (!apiKey) {
+        setError("APIキーを入力してください。");
+        return;
+      }
+
+      try {
+        $("generateBtn").disabled = true;
+        setStatus("モデルを確認しています...");
+
+        const availableModels = await getAvailableModels(apiKey);
+        const usable = MODEL_CANDIDATES.filter(m => availableModels.includes(`models/${m}`));
+
+        if (!usable.length) {
+          throw new Error("使える本文モデルが見つかりませんでした。");
+        }
+
+        let lastErr = "";
+        for (const model of usable) {
+          try {
+            setStatus(`えほんを生成しています... (${model})`);
+            const result = await generateBookData(apiKey, model, settings);
+            pages = result;
+            currentIndex = 0;
+            usedModel = model;
+            updateViewer();
+            setStatus("本文と挿絵プロンプトの生成が成功しました。");
+            return;
+          } catch (e) {
+            lastErr += `[${model}] ${e.message}\n`;
+          }
+        }
+
+        throw new Error("すべての本文モデルで失敗しました。\n" + lastErr);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        $("generateBtn").disabled = false;
+      }
+    });
+
+    updateViewer();
   </script>
 </body>
 </html>
