@@ -1,106 +1,385 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AIえほんメーカー</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AIえほんメーカー</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-[#FFFBF5]">
-    <div id="root"></div>
+<body class="bg-[#FFFBF5] text-slate-800">
+  <div id="root">
+    <div class="min-h-screen flex items-center justify-center">
+      <p class="text-rose-500 font-bold text-lg">よみこみちゅう...</p>
+    </div>
+  </div>
 
-    <script type="text/babel">
-        function App() {
-            const [step, setStep] = React.useState("setup");
-            const [apiKey, setApiKey] = React.useState("");
-            const [mainChar, setMainChar] = React.useState("こうあちゃん");
-            const [story, setStory] = React.useState([]);
-            const [pageIndex, setPageIndex] = React.useState(0);
-            const [loading, setLoading] = React.useState(false);
+  <script type="text/babel">
+    const { useState } = React;
 
-            const generateStory = async () => {
-                if (!apiKey) return alert("APIキーを 入力してください");
-                setLoading(true);
-                
-                // 【404対策】最新の gemini-2.0-flash を使用。これが一番通りやすいです。
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                
-                try {
-                    const res = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: `${mainChar}が主人公の、2歳児向けのひらがな絵本を4ページ分作って。JSON形式 {"pages": [{"text": "本文"}]} で答えて。` }] }]
-                        })
-                    });
+    function App() {
+      const [step, setStep] = useState("setup");
+      const [apiKey, setApiKey] = useState("");
+      const [mainChar, setMainChar] = useState("こうあちゃん");
+      const [pageCount, setPageCount] = useState(4);
+      const [story, setStory] = useState([]);
+      const [pageIndex, setPageIndex] = useState(0);
+      const [loading, setLoading] = useState(false);
+      const [errorMessage, setErrorMessage] = useState("");
+      const [debugInfo, setDebugInfo] = useState("");
+      const [usedModel, setUsedModel] = useState("");
 
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error?.message || "通信エラー");
+      const MODEL_CANDIDATES = [
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-8b"
+      ];
 
-                    const text = data.candidates[0].content.parts[0].text;
-                    const result = JSON.parse(text.match(/\{[\s\S]*\}/)[0]);
-                    setStory(result.pages);
-                    setStep("reader");
-                    setPageIndex(0);
-                } catch (e) {
-                    alert("エラー: " + e.message + "\n\n※キーが正しいか確認してください");
-                } finally {
-                    setLoading(false);
-                }
-            };
+      function safeString(value) {
+        return String(value || "").trim();
+      }
 
-            return (
-                <div className="max-w-md mx-auto min-h-screen p-6 font-sans text-slate-800 text-center">
-                    <header className="mb-8">
-                        <h1 className="text-2xl font-black text-rose-500">📖 AIえほんメーカー</h1>
-                    </header>
+      function extractTextFromResponse(data) {
+        if (!data || !data.candidates || !data.candidates.length) return "";
+        const parts = data.candidates[0]?.content?.parts || [];
+        return parts.map(p => p.text || "").join("\n").trim();
+      }
 
-                    {step === "setup" ? (
-                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-rose-100">
-                            <p className="text-xs font-bold text-slate-400 mb-2">APIキー</p>
-                            <input 
-                                type="password" 
-                                value={apiKey} 
-                                onChange={(e) => setApiKey(e.target.value.trim())}
-                                className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none"
-                                placeholder="ここへ 貼り付け"
-                            />
-                            <p className="text-xs font-bold text-slate-400 mb-2">しゅじんこう</p>
-                            <input 
-                                value={mainChar} 
-                                onChange={(e) => setMainChar(e.target.value)}
-                                className="w-full p-4 bg-rose-50 rounded-2xl mb-10 font-bold border-2 border-transparent focus:border-rose-200 outline-none text-lg"
-                            />
-                            <button 
-                                onClick={generateStory}
-                                disabled={loading}
-                                className="w-full bg-rose-500 text-white font-black py-5 rounded-3xl shadow-xl hover:bg-rose-600 transition-all text-xl"
-                            >
-                                {loading ? "かんがえちゅう..." : "✨ えほんをつくる！"}
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            <div className="bg-white p-10 rounded-[3rem] shadow-2xl min-h-[300px] flex items-center justify-center border-8 border-white">
-                                <p className="text-2xl font-black leading-relaxed">{story[pageIndex].text}</p>
-                            </div>
-                            <div className="flex justify-between items-center gap-4">
-                                <button onClick={() => setPageIndex(Math.max(0, pageIndex - 1))} className="w-16 h-16 bg-white rounded-2xl shadow-lg text-2xl border border-slate-100">⬅️</button>
-                                <span className="font-bold text-slate-400">{pageIndex + 1} / {story.length}</span>
-                                <button onClick={() => setPageIndex(Math.min(story.length - 1, pageIndex + 1))} className="w-16 h-16 bg-rose-500 text-white rounded-2xl shadow-lg text-2xl">➡️</button>
-                            </div>
-                            <button onClick={() => setStep("setup")} className="w-full text-slate-300 text-xs mt-10">もどる</button>
-                        </div>
-                    )}
-                </div>
-            );
+      function extractJsonBlock(text) {
+        if (!text) return null;
+
+        // ```json ... ``` を優先して取る
+        const fencedMatch = text.match(/```json\s*([\s\S]*?)\s*```/i) || text.match(/```\s*([\s\S]*?)\s*```/i);
+        if (fencedMatch && fencedMatch[1]) {
+          try {
+            return JSON.parse(fencedMatch[1]);
+          } catch (_) {}
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        // 最初の { から最後の } までを拾う
+        const firstBrace = text.indexOf("{");
+        const lastBrace = text.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          const candidate = text.slice(firstBrace, lastBrace + 1);
+          try {
+            return JSON.parse(candidate);
+          } catch (_) {}
+        }
+
+        return null;
+      }
+
+      function normalizePages(result, fallbackMainChar, fallbackPageCount) {
+        if (!result) return null;
+
+        let pages = Array.isArray(result.pages) ? result.pages : null;
+
+        if (!pages && Array.isArray(result)) {
+          pages = result;
+        }
+
+        if (!pages) return null;
+
+        const normalized = pages
+          .map((item, idx) => {
+            if (typeof item === "string") {
+              return { text: item.trim() };
+            }
+            if (item && typeof item.text === "string") {
+              return { text: item.text.trim() };
+            }
+            if (item && typeof item.body === "string") {
+              return { text: item.body.trim() };
+            }
+            return { text: `ぺーじ ${idx + 1}` };
+          })
+          .filter(p => p.text);
+
+        if (!normalized.length) return null;
+
+        // ページ数が足りない場合の保険
+        while (normalized.length < fallbackPageCount) {
+          normalized.push({ text: `${fallbackMainChar}の たのしい 1にちでした。` });
+        }
+
+        return normalized.slice(0, fallbackPageCount);
+      }
+
+      async function callGenerateContent(model, prompt, key) {
+        const endpoints = [
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+          `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${encodeURIComponent(key)}`
+        ];
+
+        let lastError = null;
+
+        for (const url of endpoints) {
+          try {
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [{ text: prompt }]
+                  }
+                ],
+                generationConfig: {
+                  temperature: 0.8,
+                  responseMimeType: "application/json"
+                }
+              })
+            });
+
+            let data = null;
+            try {
+              data = await res.json();
+            } catch (_) {
+              data = null;
+            }
+
+            if (!res.ok) {
+              const message =
+                data?.error?.message ||
+                `HTTP ${res.status} ${res.statusText}`;
+              lastError = `[${model}] ${message}`;
+              continue;
+            }
+
+            return { ok: true, model, url, data };
+          } catch (err) {
+            lastError = `[${model}] ${err.message}`;
+          }
+        }
+
+        return { ok: false, model, error: lastError || "不明なエラー" };
+      }
+
+      async function generateStory() {
+        const key = safeString(apiKey);
+        const hero = safeString(mainChar) || "こうあちゃん";
+
+        if (!key) {
+          alert("APIキーを入力してください");
+          return;
+        }
+
+        setLoading(true);
+        setErrorMessage("");
+        setDebugInfo("");
+        setUsedModel("");
+
+        const prompt = `
+あなたは子ども向け絵本の作家です。
+${hero}が主人公の、2歳児向けのやさしいひらがな絵本を ${pageCount}ページ作ってください。
+
+条件:
+- すべて ひらがな を中心に書く
+- 1ページ 1〜2文
+- こわくしない
+- やさしい気持ちで終わる
+- 主人公は毎ページに出す
+- 日本語で出力する
+- JSONのみを返す
+- 説明文や前置きは不要
+
+出力形式は必ずこれ:
+{
+  "pages": [
+    { "text": "1ページ目の本文" },
+    { "text": "2ページ目の本文" },
+    { "text": "3ページ目の本文" },
+    { "text": "4ページ目の本文" }
+  ]
+}
+        `.trim();
+
+        let success = null;
+        const errors = [];
+
+        for (const model of MODEL_CANDIDATES) {
+          const result = await callGenerateContent(model, prompt, key);
+
+          if (!result.ok) {
+            errors.push(result.error);
+            continue;
+          }
+
+          const text = extractTextFromResponse(result.data);
+          const parsed = extractJsonBlock(text) || result.data;
+          const normalized = normalizePages(parsed, hero, pageCount);
+
+          if (normalized && normalized.length > 0) {
+            success = {
+              pages: normalized,
+              model: result.model,
+              url: result.url
+            };
+            break;
+          } else {
+            errors.push(`[${result.model}] JSONの解析に失敗しました`);
+          }
+        }
+
+        if (success) {
+          setStory(success.pages);
+          setPageIndex(0);
+          setUsedModel(success.model);
+          setDebugInfo(`使用モデル: ${success.model}`);
+          setStep("reader");
+        } else {
+          const joined = errors.filter(Boolean).join("\n\n");
+          let friendly = "えほんの生成に失敗しました。";
+
+          if (/quota|rate|resource_exhausted|429|limit/i.test(joined)) {
+            friendly = "APIの利用制限に当たっている可能性があります。新しいAPIキーの作成、少し時間をおいて再試行、または別モデルの利用を確認してください。";
+          } else if (/api key|permission|forbidden|403|unauth|401/i.test(joined)) {
+            friendly = "APIキーの権限またはキーの内容に問題がある可能性があります。Google AI Studioで新しいAPIキーを作り直して試してください。";
+          } else if (/404|not found/i.test(joined)) {
+            friendly = "モデル名またはAPIの呼び出し先が合っていない可能性があります。";
+          }
+
+          setErrorMessage(friendly);
+          setDebugInfo(joined || "詳細不明");
+          alert(friendly + "\n\n--- 詳細 ---\n" + (joined || "詳細不明"));
+        }
+
+        setLoading(false);
+      }
+
+      const canPrev = pageIndex > 0;
+      const canNext = pageIndex < story.length - 1;
+
+      return (
+        <div className="max-w-md mx-auto min-h-screen p-6 font-sans">
+          <header className="mb-8 text-center">
+            <h1 className="text-3xl font-black text-rose-500">📖 AIえほんメーカー</h1>
+            <p className="text-sm text-slate-500 mt-2">GitHub Pagesでも試しやすいシンプル版</p>
+          </header>
+
+          {step === "setup" && (
+            <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-rose-100">
+              <label className="block text-xs font-bold text-slate-400 mb-2">
+                APIキー
+              </label>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value.trim())}
+                className="w-full p-4 bg-amber-50 rounded-2xl mb-6 border-2 border-transparent focus:border-amber-200 outline-none"
+                placeholder="Google AI Studio の APIキー"
+                autoComplete="off"
+                spellCheck="false"
+              />
+
+              <label className="block text-xs font-bold text-slate-400 mb-2">
+                しゅじんこう
+              </label>
+              <input
+                value={mainChar}
+                onChange={(e) => setMainChar(e.target.value)}
+                className="w-full p-4 bg-rose-50 rounded-2xl mb-6 font-bold border-2 border-transparent focus:border-rose-200 outline-none text-lg"
+                placeholder="こうあちゃん"
+              />
+
+              <label className="block text-xs font-bold text-slate-400 mb-2">
+                ぺーじすう
+              </label>
+              <select
+                value={pageCount}
+                onChange={(e) => setPageCount(Number(e.target.value))}
+                className="w-full p-4 bg-sky-50 rounded-2xl mb-8 font-bold border-2 border-transparent focus:border-sky-200 outline-none text-lg"
+              >
+                <option value={4}>4ページ</option>
+                <option value={8}>8ページ</option>
+                <option value={12}>12ページ</option>
+              </select>
+
+              <button
+                onClick={generateStory}
+                disabled={loading}
+                className="w-full bg-rose-500 text-white font-black py-5 rounded-3xl shadow-xl hover:bg-rose-600 transition-all text-xl disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? "かんがえちゅう..." : "✨ えほんをつくる！"}
+              </button>
+
+              <div className="mt-6 text-xs text-slate-500 leading-6">
+                <p>・まずは <span className="font-bold">gemini-1.5-flash</span> を試します</p>
+                <p>・だめなら別候補も自動で試します</p>
+                <p>・GitHub Pages では APIキーを直接置く方式なので、本番公開には注意してください</p>
+              </div>
+
+              {errorMessage && (
+                <div className="mt-6 bg-red-50 border border-red-200 rounded-2xl p-4">
+                  <p className="text-sm font-bold text-red-600">エラー</p>
+                  <p className="text-sm text-red-500 mt-2 whitespace-pre-wrap">{errorMessage}</p>
+                </div>
+              )}
+
+              {debugInfo && (
+                <details className="mt-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                  <summary className="cursor-pointer text-sm font-bold text-slate-600">
+                    詳細を見る
+                  </summary>
+                  <pre className="text-xs text-slate-600 mt-3 whitespace-pre-wrap break-words">
+{debugInfo}
+                  </pre>
+                </details>
+              )}
+            </div>
+          )}
+
+          {step === "reader" && story.length > 0 && (
+            <div className="space-y-6">
+              <div className="bg-white p-10 rounded-[3rem] shadow-2xl min-h-[320px] flex items-center justify-center border-8 border-white text-center relative">
+                <div className="absolute top-5 right-6 text-xs font-bold text-rose-300">
+                  {pageIndex + 1} / {story.length}
+                </div>
+                <p className="text-2xl font-black leading-relaxed">
+                  {story[pageIndex]?.text || ""}
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center gap-4">
+                <button
+                  onClick={() => canPrev && setPageIndex(pageIndex - 1)}
+                  disabled={!canPrev}
+                  className="w-16 h-16 bg-white rounded-2xl shadow-lg text-2xl border border-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ⬅️
+                </button>
+
+                <div className="text-center">
+                  <p className="font-bold text-slate-400">{pageIndex + 1} / {story.length}</p>
+                  {usedModel && (
+                    <p className="text-xs text-slate-400 mt-1">{usedModel}</p>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => canNext && setPageIndex(pageIndex + 1)}
+                  disabled={!canNext}
+                  className="w-16 h-16 bg-rose-500 text-white rounded-2xl shadow-lg text-2xl disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ➡️
+                </button>
+              </div>
+
+              <button
+                onClick={() => setStep("setup")}
+                className="w-full text-slate-400 text-sm mt-10"
+              >
+                もどる
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
 </body>
 </html>
